@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ipeak.dao.ContDao">
+    <!-- Cont的resultMap,column是给数据库列起的别名,它对应property类的属性-->
+    <resultMap id="result_Cont_Map" type="com.entity.Cont">
+        <id column="cont_id" property="contId" />
+        <result column="gmt_create" property="gmtCreate" />
+        <result column="cont_status" property="contStatus" />
+        <result column="theme" property="theme" />
+        <result column="customer_id" property="customerId" />
+        <result column="transaction_money" property="transactionMoney" />
+        <result column="gmt_modified" property="gmtModified" />
+        <result column="emp_id" property="empId" />
+        <result column="cont_name" property="contName" />
+    </resultMap>
+
+	   <!-- Assist用于辅助工具类setRequires设置的条件,${req.require}表示列名,#{req.value}表示值它是防SQL注入的 -->
+    <sql id="Assist">
+        <where>
+            <foreach collection="require" item="req" separator=" ">
+                ${req.require} 
+                <if test="req.value != null"> #{req.value}</if> 
+                <if test="req.values != null">
+                    <foreach collection="req.values" item="val" separator=","> 
+                        #{val} 
+                    </foreach> 
+                </if> 
+                <if test="req.suffix != null"> ${req.suffix}</if> 
+            </foreach>
+        </where>
+    </sql>
+
+	   <!-- updateAssist用于更新数据的使用它拓展自Assist,用于辅助工具类setRequires设置的条件,${req.require}表示列名,#{req.value}表示值它是防SQL注入的 -->
+    <sql id="updateAssist">
+        <where>
+            <foreach collection="assist.require" item="req" separator=" ">
+                ${req.require} 
+                <if test="req.value != null"> #{req.value}</if> 
+                <if test="req.values != null">
+                    <foreach collection="req.values" item="val" separator=","> 
+                        #{val} 
+                    </foreach> 
+                </if> 
+                <if test="req.suffix != null"> ${req.suffix}</if> 
+            </foreach>
+        </where>
+    </sql>
+
+    <!-- 数据库中表名为:cont的列名,as前是数据库的列明,as后是列的别名用于映射成实体类中的属性,需要注意的是别名必须与resultMap中的column别名一致 -->
+    <sql id="cont_Column">
+        cont.cont_id as cont_id
+        ,cont.gmt_create as gmt_create
+        ,cont.cont_status as cont_status
+        ,cont.theme as theme
+        ,cont.customer_id as customer_id
+        ,cont.transaction_money as transaction_money
+        ,cont.gmt_modified as gmt_modified
+        ,cont.emp_id as emp_id
+        ,cont.cont_name as cont_name
+    </sql>
+
+    <!--获得类名为:Cont对应的数据库表的数据总行数 -->
+    <select id="getContRowCount" parameterType="com.common.Assist" resultType="java.lang.Long">
+        select count(cont_id) from cont
+        <if test="require!=null"><include refid="Assist" /></if>
+    </select>
+    <!-- 获得类名为:Cont对应数据库中表的数据集合 -->
+    <select id="selectCont" parameterType="com.common.Assist"  resultMap="result_Cont_Map">
+        select  <if test="distinct !=null">${distinct}</if>
+        <choose>
+            <when test="resultColumn!=null">${resultColumn}</when>
+            <otherwise>
+        <include refid="cont_Column" /> 
+            </otherwise>
+        </choose>
+        from cont
+        <choose>
+            <when test="rowSize ==null">
+                <if test="require!=null">
+                    <include refid="Assist" />
+                </if>
+                <if test="order !=null">${order}</if>
+            </when>
+            <otherwise>
+                inner join
+                (
+                SELECT cont_id as primary_key FROM cont
+                <if test="require!=null">
+                    <include refid="Assist" />
+                </if>
+                <if test="order !=null">${order}</if>
+                <choose>
+                    <when test="startRow !=null and rowSize !=null">LIMIT #{startRow},#{rowSize} </when>
+                    <when test="rowSize !=null">LIMIT #{rowSize}</when>
+                 </choose>
+                 ) as tmp
+                 on tmp.primary_key=cont.cont_id
+            </otherwise>
+        </choose>
+    </select> 
+
+    <!-- 获得一个Cont对象,以参数Cont对象中不为空的属性作为条件进行查询-->
+    <select id="selectContByObj" parameterType="com.entity.Cont" resultMap="result_Cont_Map">
+        select 
+            <include refid="cont_Column" /> 
+        from cont
+        <where>
+            <if test="contName != null "> and cont.cont_name = #{contName}</if>
+            <if test="empId != null "> and cont.emp_id = #{empId}</if>
+            <if test="gmtModified != null "> and cont.gmt_modified = #{gmtModified}</if>
+            <if test="transactionMoney != null "> and cont.transaction_money = #{transactionMoney}</if>
+            <if test="customerId != null "> and cont.customer_id = #{customerId}</if>
+            <if test="theme != null "> and cont.theme = #{theme}</if>
+            <if test="contStatus != null "> and cont.cont_status = #{contStatus}</if>
+            <if test="gmtCreate != null "> and cont.gmt_create = #{gmtCreate}</if>
+            <if test="contId != null "> and cont.cont_id = #{contId}</if>
+        </where>
+    </select> 
+
+    <!-- 通过Cont的id获得对应数据库中表的数据对象-->
+    <select id="selectContById" parameterType="java.lang.Long" resultMap="result_Cont_Map">
+        select 
+            <include refid="cont_Column" /> 
+        from cont
+        where cont.cont_id = #{id}
+    </select> 
+
+    <!-- 将Cont插入到对应数据库的表中,包括属性值为null的数据-->
+
+    <insert id="insertCont" parameterType="com.entity.Cont">
+        insert into cont(cont_id,gmt_create,cont_status,theme,customer_id,transaction_money,gmt_modified,emp_id,cont_name) 
+        values(#{contId},#{gmtCreate},#{contStatus},#{theme},#{customerId},#{transactionMoney},#{gmtModified},#{empId},#{contName})
+    </insert>
+
+    <!-- 将Cont中属性值不为null的数据,插入到对应数据库的表中-->
+    <insert id="insertNonEmptyCont" parameterType="com.entity.Cont">
+        insert into cont
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="contId != null">cont_id,</if>
+            <if test="gmtCreate != null">gmt_create,</if>
+            <if test="contStatus != null">cont_status,</if>
+            <if test="theme != null">theme,</if>
+            <if test="customerId != null">customer_id,</if>
+            <if test="transactionMoney != null">transaction_money,</if>
+            <if test="gmtModified != null">gmt_modified,</if>
+            <if test="empId != null">emp_id,</if>
+            <if test="contName != null">cont_name,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="contId != null"> #{contId},</if>
+            <if test="gmtCreate != null"> #{gmtCreate},</if>
+            <if test="contStatus != null"> #{contStatus},</if>
+            <if test="theme != null"> #{theme},</if>
+            <if test="customerId != null"> #{customerId},</if>
+            <if test="transactionMoney != null"> #{transactionMoney},</if>
+            <if test="gmtModified != null"> #{gmtModified},</if>
+            <if test="empId != null"> #{empId},</if>
+            <if test="contName != null"> #{contName},</if>
+        </trim>
+    </insert>
+
+    <!-- 将Cont批量插入到对应数据库的表中-->
+    <insert id="insertContByBatch" parameterType="ArrayList">
+        insert into cont(cont_id,gmt_create,cont_status,theme,customer_id,transaction_money,gmt_modified,emp_id,cont_name) values
+        <foreach collection="list" item="item" index="index" separator="," >
+            (#{item.contId},#{item.gmtCreate},#{item.contStatus},#{item.theme},#{item.customerId},#{item.transactionMoney},#{item.gmtModified},#{item.empId},#{item.contName})
+        </foreach>
+    </insert>
+
+    <!-- 通过Cont的id将数据库表中对应的数据删除-->
+    <delete id="deleteContById" parameterType="java.lang.Long">
+        delete from cont
+        where cont_id = #{id}
+    </delete>
+
+    <!-- 通过辅助工具Assist中的条件将Cont对应的数据库表的数据删除-->
+    <delete id="deleteCont" parameterType="com.common.Assist">
+        delete from cont
+        <if test="require!=null"><include refid="Assist" /></if>
+    </delete>
+
+    <!-- 通过Cont的id将Cont的数据更新到数据库中对应的表,包括值null的数据-->
+    <update id="updateContById" parameterType="com.entity.Cont">
+        update cont set
+            gmt_create=#{gmtCreate}
+            ,cont_status=#{contStatus}
+            ,theme=#{theme}
+            ,customer_id=#{customerId}
+            ,transaction_money=#{transactionMoney}
+            ,gmt_modified=#{gmtModified}
+            ,emp_id=#{empId}
+            ,cont_name=#{contName}
+        where cont_id=#{contId}
+    </update>
+
+    <!-- 通过Cont的id将Cont中属性值不为null的数据更新到数据库对应的表中-->
+    <update id="updateNonEmptyContById" parameterType="com.entity.Cont">
+        update cont
+        <set>
+            <if test="gmtCreate != null">
+                gmt_create=#{gmtCreate},
+            </if>
+            <if test="contStatus != null">
+                cont_status=#{contStatus},
+            </if>
+            <if test="theme != null">
+                theme=#{theme},
+            </if>
+            <if test="customerId != null">
+                customer_id=#{customerId},
+            </if>
+            <if test="transactionMoney != null">
+                transaction_money=#{transactionMoney},
+            </if>
+            <if test="gmtModified != null">
+                gmt_modified=#{gmtModified},
+            </if>
+            <if test="empId != null">
+                emp_id=#{empId},
+            </if>
+            <if test="contName != null">
+                cont_name=#{contName},
+            </if>
+        </set>
+        where cont_id=#{contId}
+    </update>
+
+    <!-- 通过辅助工具Assist中的条件将Cont中的数据更新到数据库对应的表中,包括值为null的数据-->
+    <update id="updateCont" parameterType="map">
+        update cont
+        <set>
+                cont_id=#{enti.contId},
+                gmt_create=#{enti.gmtCreate},
+                cont_status=#{enti.contStatus},
+                theme=#{enti.theme},
+                customer_id=#{enti.customerId},
+                transaction_money=#{enti.transactionMoney},
+                gmt_modified=#{enti.gmtModified},
+                emp_id=#{enti.empId},
+                cont_name=#{enti.contName},
+        </set>
+        <if test="assist.require!=null"><include refid="updateAssist" /></if>
+    </update>
+
+    <!-- 通过辅助工具Assist中的条件将Cont中属性值不为null的数据更新到数据库对应的表中-->
+    <update id="updateNonEmptyCont" parameterType="map">
+        update cont
+        <set>
+            <if test="enti.contId != null">
+                cont_id=#{enti.contId},
+            </if>
+            <if test="enti.gmtCreate != null">
+                gmt_create=#{enti.gmtCreate},
+            </if>
+            <if test="enti.contStatus != null">
+                cont_status=#{enti.contStatus},
+            </if>
+            <if test="enti.theme != null">
+                theme=#{enti.theme},
+            </if>
+            <if test="enti.customerId != null">
+                customer_id=#{enti.customerId},
+            </if>
+            <if test="enti.transactionMoney != null">
+                transaction_money=#{enti.transactionMoney},
+            </if>
+            <if test="enti.gmtModified != null">
+                gmt_modified=#{enti.gmtModified},
+            </if>
+            <if test="enti.empId != null">
+                emp_id=#{enti.empId},
+            </if>
+            <if test="enti.contName != null">
+                cont_name=#{enti.contName},
+            </if>
+        </set>
+        <if test="assist.require!=null"><include refid="updateAssist" /></if>
+    </update>
+
+</mapper>

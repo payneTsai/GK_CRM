@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ipeak.dao.CustomerDao">
+    <!-- Customer的resultMap,column是给数据库列起的别名,它对应property类的属性-->
+    <resultMap id="result_Customer_Map" type="com.entity.Customer">
+        <id column="customer_id" property="customerId" />
+        <result column="gmt_create" property="gmtCreate" />
+        <result column="customer_mobile" property="customerMobile" />
+        <result column="customer_name" property="customerName" />
+        <result column="gmt_modified" property="gmtModified" />
+    </resultMap>
+
+	   <!-- Assist用于辅助工具类setRequires设置的条件,${req.require}表示列名,#{req.value}表示值它是防SQL注入的 -->
+    <sql id="Assist">
+        <where>
+            <foreach collection="require" item="req" separator=" ">
+                ${req.require} 
+                <if test="req.value != null"> #{req.value}</if> 
+                <if test="req.values != null">
+                    <foreach collection="req.values" item="val" separator=","> 
+                        #{val} 
+                    </foreach> 
+                </if> 
+                <if test="req.suffix != null"> ${req.suffix}</if> 
+            </foreach>
+        </where>
+    </sql>
+
+	   <!-- updateAssist用于更新数据的使用它拓展自Assist,用于辅助工具类setRequires设置的条件,${req.require}表示列名,#{req.value}表示值它是防SQL注入的 -->
+    <sql id="updateAssist">
+        <where>
+            <foreach collection="assist.require" item="req" separator=" ">
+                ${req.require} 
+                <if test="req.value != null"> #{req.value}</if> 
+                <if test="req.values != null">
+                    <foreach collection="req.values" item="val" separator=","> 
+                        #{val} 
+                    </foreach> 
+                </if> 
+                <if test="req.suffix != null"> ${req.suffix}</if> 
+            </foreach>
+        </where>
+    </sql>
+
+    <!-- 数据库中表名为:customer的列名,as前是数据库的列明,as后是列的别名用于映射成实体类中的属性,需要注意的是别名必须与resultMap中的column别名一致 -->
+    <sql id="customer_Column">
+        customer.customer_id as customer_id
+        ,customer.gmt_create as gmt_create
+        ,customer.customer_mobile as customer_mobile
+        ,customer.customer_name as customer_name
+        ,customer.gmt_modified as gmt_modified
+    </sql>
+
+    <!--获得类名为:Customer对应的数据库表的数据总行数 -->
+    <select id="getCustomerRowCount" parameterType="com.common.Assist" resultType="java.lang.Long">
+        select count(customer_id) from customer
+        <if test="require!=null"><include refid="Assist" /></if>
+    </select>
+    <!-- 获得类名为:Customer对应数据库中表的数据集合 -->
+    <select id="selectCustomer" parameterType="com.common.Assist"  resultMap="result_Customer_Map">
+        select  <if test="distinct !=null">${distinct}</if>
+        <choose>
+            <when test="resultColumn!=null">${resultColumn}</when>
+            <otherwise>
+        <include refid="customer_Column" /> 
+            </otherwise>
+        </choose>
+        from customer
+        <choose>
+            <when test="rowSize ==null">
+                <if test="require!=null">
+                    <include refid="Assist" />
+                </if>
+                <if test="order !=null">${order}</if>
+            </when>
+            <otherwise>
+                inner join
+                (
+                SELECT customer_id as primary_key FROM customer
+                <if test="require!=null">
+                    <include refid="Assist" />
+                </if>
+                <if test="order !=null">${order}</if>
+                <choose>
+                    <when test="startRow !=null and rowSize !=null">LIMIT #{startRow},#{rowSize} </when>
+                    <when test="rowSize !=null">LIMIT #{rowSize}</when>
+                 </choose>
+                 ) as tmp
+                 on tmp.primary_key=customer.customer_id
+            </otherwise>
+        </choose>
+    </select> 
+
+    <!-- 获得一个Customer对象,以参数Customer对象中不为空的属性作为条件进行查询-->
+    <select id="selectCustomerByObj" parameterType="com.entity.Customer" resultMap="result_Customer_Map">
+        select 
+            <include refid="customer_Column" /> 
+        from customer
+        <where>
+            <if test="gmtModified != null "> and customer.gmt_modified = #{gmtModified}</if>
+            <if test="customerName != null "> and customer.customer_name = #{customerName}</if>
+            <if test="customerMobile != null "> and customer.customer_mobile = #{customerMobile}</if>
+            <if test="gmtCreate != null "> and customer.gmt_create = #{gmtCreate}</if>
+            <if test="customerId != null "> and customer.customer_id = #{customerId}</if>
+        </where>
+    </select> 
+
+    <!-- 通过Customer的id获得对应数据库中表的数据对象-->
+    <select id="selectCustomerById" parameterType="java.lang.Long" resultMap="result_Customer_Map">
+        select 
+            <include refid="customer_Column" /> 
+        from customer
+        where customer.customer_id = #{id}
+    </select> 
+
+    <!-- 将Customer插入到对应数据库的表中,包括属性值为null的数据-->
+
+    <insert id="insertCustomer" parameterType="com.entity.Customer">
+        insert into customer(customer_id,gmt_create,customer_mobile,customer_name,gmt_modified) 
+        values(#{customerId},#{gmtCreate},#{customerMobile},#{customerName},#{gmtModified})
+    </insert>
+
+    <!-- 将Customer中属性值不为null的数据,插入到对应数据库的表中-->
+    <insert id="insertNonEmptyCustomer" parameterType="com.entity.Customer">
+        insert into customer
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="customerId != null">customer_id,</if>
+            <if test="gmtCreate != null">gmt_create,</if>
+            <if test="customerMobile != null">customer_mobile,</if>
+            <if test="customerName != null">customer_name,</if>
+            <if test="gmtModified != null">gmt_modified,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="customerId != null"> #{customerId},</if>
+            <if test="gmtCreate != null"> #{gmtCreate},</if>
+            <if test="customerMobile != null"> #{customerMobile},</if>
+            <if test="customerName != null"> #{customerName},</if>
+            <if test="gmtModified != null"> #{gmtModified},</if>
+        </trim>
+    </insert>
+
+    <!-- 将Customer批量插入到对应数据库的表中-->
+    <insert id="insertCustomerByBatch" parameterType="ArrayList">
+        insert into customer(customer_id,gmt_create,customer_mobile,customer_name,gmt_modified) values
+        <foreach collection="list" item="item" index="index" separator="," >
+            (#{item.customerId},#{item.gmtCreate},#{item.customerMobile},#{item.customerName},#{item.gmtModified})
+        </foreach>
+    </insert>
+
+    <!-- 通过Customer的id将数据库表中对应的数据删除-->
+    <delete id="deleteCustomerById" parameterType="java.lang.Long">
+        delete from customer
+        where customer_id = #{id}
+    </delete>
+
+    <!-- 通过辅助工具Assist中的条件将Customer对应的数据库表的数据删除-->
+    <delete id="deleteCustomer" parameterType="com.common.Assist">
+        delete from customer
+        <if test="require!=null"><include refid="Assist" /></if>
+    </delete>
+
+    <!-- 通过Customer的id将Customer的数据更新到数据库中对应的表,包括值null的数据-->
+    <update id="updateCustomerById" parameterType="com.entity.Customer">
+        update customer set
+            gmt_create=#{gmtCreate}
+            ,customer_mobile=#{customerMobile}
+            ,customer_name=#{customerName}
+            ,gmt_modified=#{gmtModified}
+        where customer_id=#{customerId}
+    </update>
+
+    <!-- 通过Customer的id将Customer中属性值不为null的数据更新到数据库对应的表中-->
+    <update id="updateNonEmptyCustomerById" parameterType="com.entity.Customer">
+        update customer
+        <set>
+            <if test="gmtCreate != null">
+                gmt_create=#{gmtCreate},
+            </if>
+            <if test="customerMobile != null">
+                customer_mobile=#{customerMobile},
+            </if>
+            <if test="customerName != null">
+                customer_name=#{customerName},
+            </if>
+            <if test="gmtModified != null">
+                gmt_modified=#{gmtModified},
+            </if>
+        </set>
+        where customer_id=#{customerId}
+    </update>
+
+    <!-- 通过辅助工具Assist中的条件将Customer中的数据更新到数据库对应的表中,包括值为null的数据-->
+    <update id="updateCustomer" parameterType="map">
+        update customer
+        <set>
+                customer_id=#{enti.customerId},
+                gmt_create=#{enti.gmtCreate},
+                customer_mobile=#{enti.customerMobile},
+                customer_name=#{enti.customerName},
+                gmt_modified=#{enti.gmtModified},
+        </set>
+        <if test="assist.require!=null"><include refid="updateAssist" /></if>
+    </update>
+
+    <!-- 通过辅助工具Assist中的条件将Customer中属性值不为null的数据更新到数据库对应的表中-->
+    <update id="updateNonEmptyCustomer" parameterType="map">
+        update customer
+        <set>
+            <if test="enti.customerId != null">
+                customer_id=#{enti.customerId},
+            </if>
+            <if test="enti.gmtCreate != null">
+                gmt_create=#{enti.gmtCreate},
+            </if>
+            <if test="enti.customerMobile != null">
+                customer_mobile=#{enti.customerMobile},
+            </if>
+            <if test="enti.customerName != null">
+                customer_name=#{enti.customerName},
+            </if>
+            <if test="enti.gmtModified != null">
+                gmt_modified=#{enti.gmtModified},
+            </if>
+        </set>
+        <if test="assist.require!=null"><include refid="updateAssist" /></if>
+    </update>
+
+</mapper>

@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="GK_CRM:war">
+    <output-path>$PROJECT_DIR$/target</output-path>
+    <root id="archive" name="GK_CRM.war">
+      <element id="artifact" artifact-name="GK_CRM:war exploded" />
+    </root>
+  </artifact>
+</component>
